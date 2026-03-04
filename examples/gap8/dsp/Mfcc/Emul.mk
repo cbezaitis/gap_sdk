@@ -12,12 +12,13 @@ INCLUDES    += -I. -I$(TILER_DSP_KERNEL_PATH) -I$(TILER_DSP_KERNEL_PATH)/LUT_Tab
 LIBS		+= -lm
 CC = gcc
 CFLAGS      += -ggdb -O0 -D__EMUL__ -DPRINT_INOUT -DPRINTDEB -D__FLOAT_EMUL__ # To emulate float16 with float32
+CFLAGS      += $(EXTRA_APP_CFLAGS)
 EXE = mfcc_emul
 TEST = 1
 ifeq ($(TEST), 1)
 	CFLAGS += -DTEST
 gen_gt:
-	python gen_ground_truth.py samples/yes.wav
+	python3 gen_ground_truth.py samples/yes.wav
 else
 gen_gt:
 endif

@@ -28,12 +28,28 @@ ndct = config.get('n_dct', False)
 from librosa.filters import get_window
 from librosa import util
 librosa_fft_window = get_window("hann", frame_size, fftbins=True)
-# Pad the window out to n_fft size
-librosa_fft_window = util.pad_center(librosa_fft_window, n_fft)
+# Pad the window out to n_fft size; newer librosa expects keyword argument
+try:
+    librosa_fft_window = util.pad_center(librosa_fft_window, n_fft)
+except TypeError:
+    librosa_fft_window = util.pad_center(librosa_fft_window, size=n_fft)
 
-stft = librosa.core.spectrum.stft(data, n_fft, frame_step, frame_size, center=False, pad_mode="constant")
+stft = librosa.core.spectrum.stft(
+    data,
+    n_fft=n_fft,
+    hop_length=frame_step,
+    win_length=frame_size,
+    center=False,
+    pad_mode="constant",
+)
 spect = np.abs(stft) ** (1 if not use_power else 2)
-mel_basis = librosa.filters.mel(samplerate, n_fft, n_mels, fmin, fmax)
+mel_basis = librosa.filters.mel(
+    sr=samplerate,
+    n_fft=n_fft,
+    n_mels=n_mels,
+    fmin=fmin,
+    fmax=fmax,
+)
 mel_spect = np.dot(mel_basis, spect)
 logmel = power_to_db(mel_spect, top_db=None)
 mfcc = scipy.fftpack.dct(logmel, axis=0, type=2, norm=None)

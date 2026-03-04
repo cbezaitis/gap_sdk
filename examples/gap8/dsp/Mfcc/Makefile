@@ -23,12 +23,13 @@ APP_LDFLAGS		+= -lm
 APP_CFLAGS      += -O3 -I$(TILER_DSP_KERNEL_PATH) -I$(GAP_SDK_HOME)/libs/gap_lib/include -DAT_WAV=$(WAV_FILE)
 APP_CFLAGS 		+= -I$(MFCCBUILD_DIR) -I$(TILER_INC) -I$(TILER_EMU_INC) -DPERF #-DPRINTDEB #-DPRINT_INOUT
 APP_CFLAGS 		+= -DFREQ_CL=$(FREQ_CL) -DFREQ_FC=$(FREQ_FC) -DFREQ_PE=$(FREQ_PE)
+APP_CFLAGS      += $(EXTRA_APP_CFLAGS)
 
 TEST = 1
 ifeq ($(TEST), 1)
 	APP_CFLAGS += -DTEST
 ground_truth.h:
-	python gen_ground_truth.py samples/yes.wav
+	python3 gen_ground_truth.py samples/yes.wav
 gen_gt: ground_truth.h
 clean_gt:
 	rm -rf ground_truth.h

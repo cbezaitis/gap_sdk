@@ -98,7 +98,13 @@ def SetupMelFBanksLibrosa(Nfft, Nbanks, sample_rate, Fmin, Fmax, norm=None):
 	print("Generating LIBROSA Mel Filter: sr = {}, n_mels = {}, n_fft = {}, fmin = {}, fmax = {}, norm = {}".format(sample_rate, Nbanks, Nfft, Fmin, Fmax, norm))
 	# Generate Mel Filterbanks matrix with librosa functions:
 	# https://librosa.org/doc/0.6.3/generated/librosa.filters.mel.html#librosa.filters.mel
-	linear_to_mel_weights = librosa.filters.mel(sample_rate, Nfft, Nbanks, Fmin, Fmax, norm=norm)
+	# Newer versions of librosa require keyword arguments for mel() parameters.
+	linear_to_mel_weights = librosa.filters.mel(sr=sample_rate,
+	                                            n_fft=Nfft,
+	                                            n_mels=Nbanks,
+	                                            fmin=Fmin,
+	                                            fmax=Fmax,
+	                                            norm=norm)
 	return linear_to_mel_weights
 
 

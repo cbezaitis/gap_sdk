@@ -3,6 +3,7 @@
 MFCCBUILD_DIR     ?= $(CURDIR)/BUILD_MODEL
 MFCC_MODEL_GEN     = $(MFCCBUILD_DIR)/GenMFCC
 MFCC_SRCG 				+= $(TILER_DSP_GENERATOR_PATH)/DSP_Generators.c
+MFCC_SRCG                += $(TILER_INC)/GenTilingDebug_stub.c
 MFCC_PARAMS_JSON   = MfccConfig.json
 MFCC_PARAMS_HEADER = $(MFCCBUILD_DIR)/MFCC_params.h
 MFCC_SRC_CODE 		 = $(MFCCBUILD_DIR)/MfccKernels.c
@@ -34,7 +35,7 @@ $(MFCCBUILD_DIR):
 	mkdir $(MFCCBUILD_DIR)
 
 $(MFCC_PARAMS_HEADER): $(MFCC_PARAMS_JSON) | $(MFCCBUILD_DIR)
-	python $(TILER_DSP_GENERATOR_PATH)/DSP_LUTGen.py $(MFCC_PARAMS_JSON) --build_dir $(MFCCBUILD_DIR) --save_params_header $(MFCC_PARAMS_HEADER) --save_text
+	python3 $(TILER_DSP_GENERATOR_PATH)/DSP_LUTGen.py $(MFCC_PARAMS_JSON) --build_dir $(MFCCBUILD_DIR) --save_params_header $(MFCC_PARAMS_HEADER) --save_text
 
 # Build the code generator from the model code
 $(MFCC_MODEL_GEN): $(MFCC_PARAMS_HEADER) | $(MFCCBUILD_DIR)

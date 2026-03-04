@@ -2,7 +2,12 @@ import os
 import json
 import numpy as np
 import math
-from bfloat16 import bfloat16
+try:
+	from bfloat16 import bfloat16
+except ImportError:
+	# Fallback: map bfloat16 to float16 if the optional dependency is missing.
+	# For dtypes other than "bfloat16" (e.g. "fix16", "fix32_scal") this has no effect.
+	bfloat16 = np.float16
 import sys
 import argparse
 from SetupLUT import SetupTwiddlesLUT, SetupSwapTable, SetupSwapTableR4, SetupDCTTable, SetupLiftCoeff, SetupTwiddlesRFFT, SparseMelFilterBanksCode, FP2FIX
@@ -154,13 +159,12 @@ def main():
 				quantize=dtype in ["int", "fix16", "fix32_scal"], q_precision=FFT_TWIDDLE_Q)
 
 	# Real FFT Twiddles
-	if dtype != "fix32_scal":
-		RFFTTwiddles_real, RFFTTwiddles_imag = SetupTwiddlesRFFT(n_fft)
-		RFFTTwiddles = np.empty(len(RFFTTwiddles_real) + len(RFFTTwiddles_imag))
-		RFFTTwiddles[::2] = RFFTTwiddles_real
-		RFFTTwiddles[1::2] = RFFTTwiddles_imag
-		WriteToFile(RFFTTwiddles, build_dir+"/RFFTTwiddles", args.save_text, dtype,
-					quantize=dtype in ["int", "fix16", "fix32_scal"], q_precision=FFT_TWIDDLE_Q)
+	RFFTTwiddles_real, RFFTTwiddles_imag = SetupTwiddlesRFFT(n_fft)
+	RFFTTwiddles = np.empty(len(RFFTTwiddles_real) + len(RFFTTwiddles_imag))
+	RFFTTwiddles[::2] = RFFTTwiddles_real
+	RFFTTwiddles[1::2] = RFFTTwiddles_imag
+	WriteToFile(RFFTTwiddles, build_dir+"/RFFTTwiddles", args.save_text, dtype,
+				quantize=dtype in ["int", "fix16", "fix32_scal"], q_precision=FFT_TWIDDLE_Q)
 
 	# Mel Filterbanks
 	if n_mels > 0 or mel_filterbanks_file is not None:
