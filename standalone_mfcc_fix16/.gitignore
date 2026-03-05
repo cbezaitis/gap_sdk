@@ -1,0 +1,6 @@
+# Build
+*.o
+mfcc_standalone
+
+# Output for cross-check (optional to commit a reference)
+mfcc_output.bin
