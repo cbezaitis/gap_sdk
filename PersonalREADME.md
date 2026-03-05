@@ -1,4 +1,4 @@
-## GAP SDK Docker image (`gap`)
+## GAP SDK Docker image (`cbezaitis/gap:latest`)
 
 This section documents how the `gap` Docker image was created from this repository and how to reproduce the environment and test run.
 
@@ -9,7 +9,7 @@ This section documents how the `gap` Docker image was created from this reposito
 - **Python setup**:
   - `python` is configured to point to `python3` via `update-alternatives`.
   - Python dependencies from `requirements.txt` and `doc/requirements.txt` are installed with `pip3`.
-  - Extra DSP-related Python packages are preinstalled: **`numpy`** and **`librosa`**, so MFCC LUT generation and ground-truth scripts work out of the box.
+  - Extra DSP-related Python packages are preinstalled: `**numpy`** and `**librosa**`, so MFCC LUT generation and ground-truth scripts work out of the box.
 - **GAP RISC‑V toolchain**:
   - The official repo `https://github.com/GreenWaves-Technologies/gap_riscv_toolchain_ubuntu.git` is cloned in the image build.
   - Instead of running its `install.sh` with `sudo` (not available in Docker build), the image:
@@ -29,8 +29,8 @@ The `Dockerfile` at the root of this repo does the following:
 4. Clones the GAP RISC‑V toolchain repo and `rsync`s it into `/usr/lib/gap_riscv_toolchain`.
 5. `WORKDIR /opt/gap_sdk` and `COPY . .` to bring in this SDK.
 6. `pip3 install --upgrade pip` and installs requirements from:
-   - `requirements.txt`
-   - `doc/requirements.txt`
+  - `requirements.txt`
+  - `doc/requirements.txt`
 7. Sets the default container command to `/bin/bash` for interactive use.
 
 ### How to build the image
@@ -48,7 +48,7 @@ This produces a local Docker image named `gap`.
 The following commands run the PMSIS HelloWorld example on the GVSOC simulator entirely inside the `gap` image and verify that the SDK is working:
 
 ```bash
-docker run --rm gap bash -lc \
+docker run --rm cbezaitis/gap:latest bash -lc \
   "cd /opt/gap_sdk && \
    source sourceme.sh --board gapuino && \
    make -f gap8/gap8.mk gvsoc && \
@@ -58,12 +58,12 @@ docker run --rm gap bash -lc \
 
 What this does:
 
-- **`source sourceme.sh --board gapuino`**:
+- `**source sourceme.sh --board gapuino**`:
   - Sets up `GAP_SDK_HOME` and other environment variables.
   - Selects the GAP8 GAPUINO_V3 board configuration (interactive menu is driven by `sourceme.sh`).
-- **`make -f gap8/gap8.mk gvsoc`**:
+- `**make -f gap8/gap8.mk gvsoc**`:
   - Builds the GVSOC simulation platform and its models for GAP8 inside the container.
-- **`cd examples/gap8/basic/helloworld`** and `make clean all run PMSIS_OS=freertos platform=gvsoc io=host`:
+- `**cd examples/gap8/basic/helloworld**` and `make clean all run PMSIS_OS=freertos platform=gvsoc io=host`:
   - Builds the FreeRTOS-based HelloWorld example for GAP8 using the installed toolchain and SDK.
   - Runs it on GVSOC with host I/O so that output appears in the container’s console.
 
@@ -81,7 +81,7 @@ Test success !
 
 Seeing `Test success !` confirms that:
 
-- The Docker image `gap` was built correctly.
+- The Docker image was built correctly.
 - The GAP SDK, toolchain, and GVSOC are functioning inside the container.
 
 ### MFCC examples inside the Docker image
@@ -92,12 +92,26 @@ All commands below assume you are in the SDK root inside the container (`/opt/ga
 
 #### 1. Enter the image and source the SDK
 
+**Without a local WAV folder** (use image as-is):
+
 ```bash
-docker run --rm -it gap bash
+docker run --rm -it cbezaitis/gap:latest bash
 
 cd /opt/gap_sdk
 source sourceme.sh --board gapuino
 ```
+
+**With a local folder that contains your WAV (e.g. `input.wav`)** — mount it so the container can read it:
+
+```bash
+# Replace /path/to/your/wav/folder with the absolute path to the directory that contains input.wav
+docker run --rm -it -v /path/to/your/wav/folder:/opt/gap_sdk/examples/gap8/dsp/Mfcc/my_input cbezaitis/gap:latest bash
+
+cd /opt/gap_sdk
+source sourceme.sh --board gapuino
+```
+
+Inside the container, your WAV will be at `examples/gap8/dsp/Mfcc/my_input/input.wav` (or whatever filename it has in that folder). Use that path when running `gen_ground_truth.py` below.
 
 This selects the GAP8 GAPUINO_V3 board and prepares `GVSOC` and the toolchain.
 
@@ -108,6 +122,21 @@ make -f gap8/gap8.mk gvsoc
 ```
 
 You only need to do this once per SDK tree inside the container; subsequent MFCC runs can reuse the same GVSOC build.
+
+#### 2b. Generate ground truth from a WAV file
+
+To create or update `ground_truth.h` from your own WAV (e.g. the one you mounted as `my_input/input.wav`), run from inside the container:
+
+```bash
+cd /opt/gap_sdk/examples/gap8/dsp/Mfcc
+python3 gen_ground_truth.py my_input/input.wav
+```
+
+This reads `MfccConfig.json` in that directory, runs the same MFCC pipeline (librosa) on the WAV, and writes `ground_truth.h` in the same directory. Use that path for the MFCC test or copy `ground_truth.h` into the standalone app.
+
+- If you did **not** mount a folder, use the bundled sample:  
+`python3 gen_ground_truth.py samples/yes.wav`
+- If you mounted your folder under a different name than `my_input`, use that path (e.g. `my_input/input.wav` → replace with your mount path).
 
 #### 3. Run the 16‑bit fixed‑point MFCC example (GVSOC)
 
@@ -122,7 +151,6 @@ make clean all run PMSIS_OS=freertos platform=gvsoc io=host
   - Generates LUTs and MFCC kernels using `MfccConfig.json` (`dtype: fix16`).
   - Builds and runs on GVSOC.
   - Prints a summary similar to:
-
     ```text
      *** MFCC Test ***
 
@@ -175,4 +203,5 @@ Once the `gap` image is published to a container registry, users who cannot or d
 docker pull cbezaitis/gap
 ```
 
-- After pulling, all of the commands in the sections above (`docker run --rm gap ...`, MFCC tests, etc.) remain the same, assuming you tag the pulled image locally as `gap`.
+- After pulling, all of the commands in the sections above (`docker run --rm cbezaitis/gap:latest ...`, MFCC tests, etc.) remain the same.
+
